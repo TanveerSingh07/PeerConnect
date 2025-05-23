@@ -15,7 +15,7 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const [activePage, setActivePage] = useState('/dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className={`min-h-screen flex flex-col ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"} transition-colors duration-500`}>
