@@ -1,25 +1,28 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
 import BrowseStudents from './pages/BrowseStudents';
-import MyConnections from './pages/Connections';
+import Connections from './pages/Connections';
 import MyProfile from './pages/MyProfile';
-import './index.css';
+import AboutUs from './pages/AboutUs';
+import Notifications from './pages/Notifications';
+import Login from './pages/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './index.css';
 
 export default function App() {
   const [theme, setTheme] = useState('light');
 
-  // Set theme from localStorage or default to light
   useEffect(() => {
     const saved = localStorage.getItem('theme') || 'light';
     setTheme(saved);
     document.documentElement.classList.toggle('dark', saved === 'dark');
   }, []);
 
-  // Toggle theme and store it
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -28,20 +31,24 @@ export default function App() {
   };
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
-        <Navbar onToggleTheme={toggleTheme} theme={theme} />
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/browse" element={<BrowseStudents />} />
-            <Route path="/connections" element={<MyConnections />} />
-            <Route path="/profile" element={<MyProfile />} />
-          </Routes>
-        </div>
-        <ToastContainer position="bottom-right" theme={theme === 'dark' ? 'dark' : 'light'} />
-      </div>
-    </Router>
+    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
+      <Navbar onToggleTheme={toggleTheme} theme={theme} />
+      
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/browse" element={<ProtectedRoute><BrowseStudents /></ProtectedRoute>} />
+          <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+          <Route path="/about" element={<ProtectedRoute><AboutUs /></ProtectedRoute>} />
+        </Routes>
+      </main>
+
+      <Footer />
+      <ToastContainer position="bottom-right" theme={theme === 'dark' ? 'dark' : 'light'} autoClose={3000} />
+    </div>
   );
 }

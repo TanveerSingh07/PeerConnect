@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { students } from "../utils/mockData";
-import Toast from "../components/Toast";
+import { userAPI, authAPI } from "../services/api";
+import { setCurrentUser } from "../services/auth";
+import { toast } from "react-toastify";
 
 const defaultProfile = {
   name: "",
   collegeId: "",
+  email: "",
   year: "",
   department: "",
   location: "",
@@ -20,43 +22,78 @@ const defaultProfile = {
 
 export default function MyProfile() {
   const [profile, setProfile] = useState(defaultProfile);
-  const [connections, setConnections] = useState([]);
-  const [sentRequests, setSentRequests] = useState([]);
-  const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Load profile safely on mount
   useEffect(() => {
-    const savedProfile = JSON.parse(localStorage.getItem("peerProfile")) || {};
-    setProfile(savedProfile);
-
-    const collegeId = savedProfile.collegeId || "default";
-    const sent =
-      JSON.parse(localStorage.getItem(`sentRequests_${collegeId}`)) || [];
-    setSentRequests(sent);
-    const connected = students.filter((s) => sent.includes(s.id));
-    setConnections(connected);
+    fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const { data } = await authAPI.getMe();
+      setProfile(data);
+    } catch (error) {
+      console.error('Profile error:', error);
+      toast.error('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    localStorage.setItem("peerProfile", JSON.stringify(profile));
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2500);
+    setSaving(true);
+
+    try {
+      const { data } = await userAPI.updateProfile(profile);
+      setProfile(data);
+      setCurrentUser(data);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // Mock counts (later from backend)
-  const connectionsCount = connections.length;
-  const skillsCount = profile.skills ? profile.skills.split(",").length : 0;
-
+  // FIXED: Proper completion calculation capped at 100%
   const completion = useMemo(() => {
-    const filled = Object.values(profile).filter(Boolean).length;
-    return Math.round((filled / Object.keys(profile).length) * 100);
+    const requiredFields = [
+      'name',
+      'collegeId',
+      'email',
+      'year',
+      'department',
+      'location',
+      'bio',
+      'profilePic',
+      'skills',
+      'interests',
+      'experienceLevel',
+      'lookingFor',
+      'github',
+      'linkedin'
+    ];
+    
+    const filledFields = requiredFields.filter(field => {
+      const value = profile[field];
+      return value && value.toString().trim() !== '';
+    }).length;
+    
+    const percentage = Math.round((filledFields / requiredFields.length) * 100);
+    
+    // Cap at 100%
+    return Math.min(percentage, 100);
   }, [profile]);
+
+  const skillsCount = profile.skills ? profile.skills.split(",").length : 0;
 
   const renderTags = (text) =>
     text ? (
@@ -69,14 +106,24 @@ export default function MyProfile() {
         </span>
       ))
     ) : (
-      <span className="text-gray-500 text-sm">No skills added</span>
+      <span className="text-gray-500 text-sm">Not added yet</span>
     );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Profile Header */}
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 mb-8 flex flex-col md:flex-row gap-6 items-center">
-        {/* Avatar */}
         <div className="relative">
           {profile.profilePic ? (
             <img
@@ -91,7 +138,6 @@ export default function MyProfile() {
           )}
         </div>
 
-        {/* Info */}
         <div className="flex-1 text-center md:text-left">
           <h2 className="text-2xl font-semibold">
             {profile.name || "Your Name"}
@@ -100,12 +146,7 @@ export default function MyProfile() {
             {profile.bio || "Add a short bio to make your profile stand out"}
           </p>
 
-          {/* Stats */}
           <div className="flex justify-center md:justify-start gap-10 mt-4 text-sm">
-            <div>
-              <p className="text-lg font-bold">{connectionsCount}</p>
-              <p className="text-gray-500">Connections</p>
-            </div>
             <div>
               <p className="text-lg font-bold">{skillsCount}</p>
               <p className="text-gray-500">Skills</p>
@@ -118,24 +159,27 @@ export default function MyProfile() {
         </div>
       </div>
 
-      {/* Completion Bar */}
+      {/* Completion Bar - FIXED */}
       <div className="mb-6">
         <p className="text-sm mb-2 text-gray-600 dark:text-gray-300">
           Profile Completion
         </p>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 h-3 rounded-full">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 h-3 rounded-full overflow-hidden">
           <div
             className="bg-blue-600 h-3 rounded-full transition-all"
-            style={{ width: `${completion}%` }}
+            style={{ width: `${Math.min(completion, 100)}%` }}
           />
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          {completion >= 100 ? '🎉 Profile complete!' : `${14 - Math.round((completion / 100) * 14)} fields left to complete your profile`}
+        </p>
       </div>
 
       {/* Main Layout */}
       <div className="grid lg:grid-cols-3 gap-10">
         {/* FORM */}
         <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-8">
-          {/* Section */}
+          {/* Basic Information */}
           <div className="card">
             <h3 className="section-title text-lg font-semibold">
               Basic Information
@@ -150,18 +194,36 @@ export default function MyProfile() {
               />
               <input
                 className="input"
+                name="email"
+                type="email"
+                placeholder="Email"
+                value={profile.email}
+                onChange={handleChange}
+                disabled
+                title="Email cannot be changed"
+              />
+              <input
+                className="input"
                 name="collegeId"
                 placeholder="College ID"
                 value={profile.collegeId}
                 onChange={handleChange}
+                disabled
+                title="College ID cannot be changed"
               />
-              <input
+              <select
                 className="input"
                 name="year"
-                placeholder="Year"
                 value={profile.year}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Select Year</option>
+                <option value="1st">1st Year</option>
+                <option value="2nd">2nd Year</option>
+                <option value="3rd">3rd Year</option>
+                <option value="4th">4th Year</option>
+                <option value="5th">5th Year</option>
+              </select>
               <input
                 className="input"
                 name="department"
@@ -170,7 +232,7 @@ export default function MyProfile() {
                 onChange={handleChange}
               />
               <input
-                className="input md:col-span-2"
+                className="input"
                 name="location"
                 placeholder="Location"
                 value={profile.location}
@@ -179,6 +241,7 @@ export default function MyProfile() {
             </div>
           </div>
 
+          {/* About You */}
           <div className="card">
             <h3 className="section-title text-lg font-semibold">About You</h3>
             <textarea
@@ -190,6 +253,7 @@ export default function MyProfile() {
             />
           </div>
 
+          {/* Skills & Preferences */}
           <div className="card">
             <h3 className="section-title text-lg font-semibold">
               Skills & Preferences
@@ -237,6 +301,7 @@ export default function MyProfile() {
             </div>
           </div>
 
+          {/* Social Links */}
           <div className="card">
             <h3 className="section-title text-lg font-semibold">
               Social Links
@@ -259,6 +324,7 @@ export default function MyProfile() {
             </div>
           </div>
 
+          {/* Profile Image */}
           <div className="card">
             <h3 className="section-title text-lg font-semibold">
               Profile Image
@@ -266,22 +332,27 @@ export default function MyProfile() {
             <input
               className="input mt-5 w-full"
               name="profilePic"
-              placeholder="Profile Image URL (temporary)"
+              placeholder="Profile Image URL"
               value={profile.profilePic}
               onChange={handleChange}
             />
+            <p className="text-xs text-gray-500 mt-2">
+              Enter image URL (e.g., from Imgur, Cloudinary)
+            </p>
           </div>
 
+          {/* Save Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition"
+            disabled={saving}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50"
           >
-            Save Profile
+            {saving ? 'Saving...' : 'Save Profile'}
           </button>
         </form>
 
         {/* PREVIEW */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 space-y-5">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 space-y-5 h-fit sticky top-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase">
             Profile Preview
           </h3>
@@ -293,8 +364,18 @@ export default function MyProfile() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {renderTags(profile.skills)}
+          <div>
+            <p className="text-xs font-semibold mb-2 text-gray-500 uppercase">Skills</p>
+            <div className="flex flex-wrap gap-2">
+              {renderTags(profile.skills)}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold mb-2 text-gray-500 uppercase">Interests</p>
+            <div className="flex flex-wrap gap-2">
+              {renderTags(profile.interests)}
+            </div>
           </div>
 
           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
@@ -307,8 +388,6 @@ export default function MyProfile() {
           </div>
         </div>
       </div>
-
-      {showToast && <Toast message="Profile saved successfully!" />}
     </div>
   );
 }
