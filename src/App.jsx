@@ -8,6 +8,8 @@ import Connections from './pages/Connections';
 import MyProfile from './pages/MyProfile';
 import AboutUs from './pages/AboutUs';
 import Notifications from './pages/Notifications';
+import Chat from './pages/Chat';
+import UserProfile from './pages/UserProfile';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
@@ -42,7 +44,9 @@ export default function App() {
           <Route path="/browse" element={<ProtectedRoute><BrowseStudents /></ProtectedRoute>} />
           <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+          <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
           <Route path="/about" element={<ProtectedRoute><AboutUs /></ProtectedRoute>} />
         </Routes>
       </main>

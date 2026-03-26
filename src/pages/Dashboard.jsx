@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { userAPI, connectionAPI, postAPI } from "../services/api";
 import { getCurrentUser } from "../services/auth";
 import { toast } from "react-toastify";
 import { Heart, MessageCircle, Send, Trash2, Search, X } from "lucide-react";
+import SkillRecommendations from "../components/SkillRecommendations";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({});
   const [stats, setStats] = useState({
     connections: 0,
@@ -72,17 +75,17 @@ export default function Dashboard() {
     }
   };
 
-const sharedSkills = connections.filter((c) => {
-  if (!profile.skills || !c.skills) return false;
-  
-  const userSkills = profile.skills.split(',').map(s => s.trim().toLowerCase());
-  const connectionSkills = c.skills.split(',').map(s => s.trim().toLowerCase());
-  return userSkills.some(userSkill => 
-    connectionSkills.some(connSkill => 
-      connSkill.includes(userSkill) || userSkill.includes(connSkill)
-    )
-  );
-});
+  const sharedSkills = connections.filter((c) => {
+    if (!profile.skills || !c.skills) return false;
+    
+    const userSkills = profile.skills.split(',').map(s => s.trim().toLowerCase());
+    const connectionSkills = c.skills.split(',').map(s => s.trim().toLowerCase());
+    return userSkills.some(userSkill => 
+      connectionSkills.some(connSkill => 
+        connSkill.includes(userSkill) || userSkill.includes(connSkill)
+      )
+    );
+  });
 
   const statsData = {
     labels: ["Connections", "Matches", "Requests"],
@@ -142,7 +145,6 @@ const sharedSkills = connections.filter((c) => {
     }
   };
 
-  // Add new handleDeleteComment function
   const handleDeleteComment = async (postId, commentId) => {
     try {
       await postAPI.deleteComment(postId, commentId);
@@ -178,6 +180,10 @@ const sharedSkills = connections.filter((c) => {
     } catch (error) {
       toast.error("Failed to add comment");
     }
+  };
+
+  const handleUserClick = (userId) => {
+    navigate(`/profile/${userId}`);
   };
 
   if (loading) {
@@ -236,6 +242,9 @@ const sharedSkills = connections.filter((c) => {
           <Doughnut data={statsData} />
         </div>
       </div>
+
+      {/* Skill Recommendations - NEW */}
+      <SkillRecommendations />
 
       {/* Community Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -313,7 +322,10 @@ const sharedSkills = connections.filter((c) => {
                   className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
+                    <div 
+                      className="flex items-center gap-2 cursor-pointer hover:opacity-80"
+                      onClick={() => handleUserClick(post.author?._id)}
+                    >
                       {post.author?.profilePic ? (
                         <img
                           src={post.author.profilePic}
@@ -326,7 +338,7 @@ const sharedSkills = connections.filter((c) => {
                         </div>
                       )}
                       <div>
-                        <p className="font-semibold">
+                        <p className="font-semibold hover:text-blue-600">
                           {post.author?.name || "Anonymous"}
                         </p>
                         <p className="text-xs text-gray-500">
@@ -483,7 +495,11 @@ const sharedSkills = connections.filter((c) => {
               <li className="text-gray-500">No connections yet</li>
             ) : (
               connections.slice(0, 5).map((student) => (
-                <li key={student._id} className="flex items-center gap-2">
+                <li 
+                  key={student._id} 
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded"
+                  onClick={() => handleUserClick(student._id)}
+                >
                   {student.profilePic ? (
                     <img
                       src={student.profilePic}
@@ -495,7 +511,7 @@ const sharedSkills = connections.filter((c) => {
                       {student.name?.[0]?.toUpperCase() || "?"}
                     </div>
                   )}
-                  <span>{student.name}</span>
+                  <span className="hover:text-blue-600">{student.name}</span>
                 </li>
               ))
             )}
@@ -521,6 +537,7 @@ const sharedSkills = connections.filter((c) => {
           )}
         </div>
       </div>
+
       {/* Delete Post Dialog */}
       {deleteDialogPost && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

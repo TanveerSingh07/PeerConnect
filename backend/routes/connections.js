@@ -7,7 +7,8 @@ import {
   getMyConnections,
   getPendingRequests,
   getSentRequests,
-  getConnectionStatus
+  getConnectionStatus,
+  removeConnection
 } from '../controllers/connectionController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -36,5 +37,7 @@ router.put('/reject/:connectionId', protect, rejectConnectionRequest);
 
 // @route   DELETE /api/connections/withdraw/:recipientId
 router.delete('/withdraw/:recipientId', protect, withdrawConnectionRequest);
+
+router.delete('/remove/:userId', protect, removeConnection); 
 
 export default router;

@@ -1,30 +1,69 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sun, Moon, Menu, X, Home, Search, Users, User, LogOut, Info, Bell } from 'lucide-react';
+import { Sun, Moon, Menu, X, Home, Search, Users, User, LogOut, Info, Bell, MessageSquare } from 'lucide-react';
 import { isAuthenticated, logout } from '../services/auth';
-import { notificationAPI } from '../services/api';
+import { notificationAPI, messageAPI } from '../services/api';
+import socketService from '../services/socket';
 
 export default function Navbar({ onToggleTheme, theme }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [messageCount, setMessageCount] = useState(0);
   const isAuth = isAuthenticated();
 
   useEffect(() => {
     if (isAuth) {
-      fetchNotifCount();
-      const interval = setInterval(fetchNotifCount, 30000); // Every 30s
+      fetchCounts();
+      const interval = setInterval(fetchCounts, 30000); // Every 30s
       return () => clearInterval(interval);
     }
   }, [isAuth]);
 
-  // ✅ FIX: Refresh on page visibility change (when user returns to tab)
+  // ✅ FIX: Listen for Socket.io new messages to update count instantly
+  useEffect(() => {
+    if (isAuth) {
+      const handleNewMessage = () => {
+        // Increment message count when new message arrives
+        setMessageCount(prev => prev + 1);
+      };
+
+      socketService.onNewMessage(handleNewMessage);
+
+      return () => {
+        socketService.off('newMessage', handleNewMessage);
+      };
+    }
+  }, [isAuth]);
+
+  // ✅ FIX: Listen for custom events when messages/notifications are viewed
+  useEffect(() => {
+    if (isAuth) {
+      const handleNotificationRead = () => {
+        fetchCounts();
+      };
+
+      const handleMessageRead = () => {
+        fetchCounts();
+      };
+
+      window.addEventListener('notificationRead', handleNotificationRead);
+      window.addEventListener('messageRead', handleMessageRead);
+
+      return () => {
+        window.removeEventListener('notificationRead', handleNotificationRead);
+        window.removeEventListener('messageRead', handleMessageRead);
+      };
+    }
+  }, [isAuth]);
+
+  // Refresh on page visibility change
   useEffect(() => {
     if (isAuth) {
       const handleVisibilityChange = () => {
         if (!document.hidden) {
-          fetchNotifCount();
+          fetchCounts();
         }
       };
 
@@ -33,22 +72,26 @@ export default function Navbar({ onToggleTheme, theme }) {
     }
   }, [isAuth]);
 
-  // ✅ FIX: Refresh when navigating to notifications page
+  // ✅ FIX: Instant refresh when navigating to chat/notifications
   useEffect(() => {
-    if (isAuth && location.pathname === '/notifications') {
-      // Delay to allow notification to be marked as read first
-      const timer = setTimeout(fetchNotifCount, 500);
-      return () => clearTimeout(timer);
+    if (isAuth && (location.pathname === '/notifications' || location.pathname === '/chat')) {
+      // Immediate update
+      fetchCounts();
     }
   }, [isAuth, location.pathname]);
 
-  const fetchNotifCount = async () => {
+  const fetchCounts = async () => {
     try {
-      const { data } = await notificationAPI.getCount();
-      setNotifCount(data.count || 0);
+      const [notifRes, messageRes] = await Promise.all([
+        notificationAPI.getCount(),
+        messageAPI.getUnreadCount()
+      ]);
+      setNotifCount(notifRes.data.count || 0);
+      setMessageCount(messageRes.data.count || 0);
     } catch (error) {
-      console.error('Failed to fetch notification count:', error);
+      console.error('Failed to fetch counts:', error);
       setNotifCount(0);
+      setMessageCount(0);
     }
   };
 
@@ -56,6 +99,7 @@ export default function Navbar({ onToggleTheme, theme }) {
     { to: '/dashboard', label: 'Dashboard', icon: <Home size={18} /> },
     { to: '/browse', label: 'Browse', icon: <Search size={18} /> },
     { to: '/connections', label: 'Connections', icon: <Users size={18} /> },
+    { to: '/chat', label: 'Messages', icon: <MessageSquare size={18} />, badge: messageCount },
     { to: '/notifications', label: 'Notifications', icon: <Bell size={18} />, badge: notifCount },
     { to: '/profile', label: 'Profile', icon: <User size={18} /> },
     { to: '/about', label: 'About', icon: <Info size={18} /> },
@@ -130,9 +174,9 @@ export default function Navbar({ onToggleTheme, theme }) {
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                {notifCount > 0 && !mobileMenuOpen && (
+                {(notifCount + messageCount) > 0 && !mobileMenuOpen && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {notifCount > 9 ? '9+' : notifCount}
+                    {(notifCount + messageCount) > 9 ? '9+' : (notifCount + messageCount)}
                   </span>
                 )}
               </button>

@@ -24,6 +24,9 @@ export default function MyProfile() {
   const [profile, setProfile] = useState(defaultProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -35,8 +38,8 @@ export default function MyProfile() {
       const { data } = await authAPI.getMe();
       setProfile(data);
     } catch (error) {
-      console.error('Profile error:', error);
-      toast.error('Failed to load profile');
+      console.error("Profile error:", error);
+      toast.error("Failed to load profile");
     } finally {
       setLoading(false);
     }
@@ -55,9 +58,9 @@ export default function MyProfile() {
       const { data } = await userAPI.updateProfile(profile);
       setProfile(data);
       setCurrentUser(data);
-      toast.success('Profile updated successfully!');
+      toast.success("Profile updated successfully!");
     } catch (error) {
-      toast.error('Failed to update profile');
+      toast.error("Failed to update profile");
     } finally {
       setSaving(false);
     }
@@ -66,34 +69,50 @@ export default function MyProfile() {
   // FIXED: Proper completion calculation capped at 100%
   const completion = useMemo(() => {
     const requiredFields = [
-      'name',
-      'collegeId',
-      'email',
-      'year',
-      'department',
-      'location',
-      'bio',
-      'profilePic',
-      'skills',
-      'interests',
-      'experienceLevel',
-      'lookingFor',
-      'github',
-      'linkedin'
+      "name",
+      "collegeId",
+      "email",
+      "year",
+      "department",
+      "location",
+      "bio",
+      "profilePic",
+      "skills",
+      "interests",
+      "experienceLevel",
+      "lookingFor",
+      "github",
+      "linkedin",
     ];
-    
-    const filledFields = requiredFields.filter(field => {
+
+    const filledFields = requiredFields.filter((field) => {
       const value = profile[field];
-      return value && value.toString().trim() !== '';
+      return value && value.toString().trim() !== "";
     }).length;
-    
+
     const percentage = Math.round((filledFields / requiredFields.length) * 100);
-    
+
     // Cap at 100%
     return Math.min(percentage, 100);
   }, [profile]);
 
   const skillsCount = profile.skills ? profile.skills.split(",").length : 0;
+
+  const handleDeleteAccount = async () => {
+  if (deleteConfirmText !== 'DELETE') return;
+  
+  setDeleting(true);
+  try {
+    await userAPI.deleteAccount();
+    toast.success('Account deleted successfully');
+    localStorage.removeItem('token');
+    localStorage.removeItem('peerProfile');
+    window.location.href = '/login';
+  } catch (error) {
+    toast.error('Failed to delete account');
+    setDeleting(false);
+  }
+};
 
   const renderTags = (text) =>
     text ? (
@@ -171,7 +190,9 @@ export default function MyProfile() {
           />
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          {completion >= 100 ? '🎉 Profile complete!' : `${14 - Math.round((completion / 100) * 14)} fields left to complete your profile`}
+          {completion >= 100
+            ? "🎉 Profile complete!"
+            : `${14 - Math.round((completion / 100) * 14)} fields left to complete your profile`}
         </p>
       </div>
 
@@ -347,7 +368,7 @@ export default function MyProfile() {
             disabled={saving}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save Profile'}
+            {saving ? "Saving..." : "Save Profile"}
           </button>
         </form>
 
@@ -365,14 +386,18 @@ export default function MyProfile() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold mb-2 text-gray-500 uppercase">Skills</p>
+            <p className="text-xs font-semibold mb-2 text-gray-500 uppercase">
+              Skills
+            </p>
             <div className="flex flex-wrap gap-2">
               {renderTags(profile.skills)}
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-semibold mb-2 text-gray-500 uppercase">Interests</p>
+            <p className="text-xs font-semibold mb-2 text-gray-500 uppercase">
+              Interests
+            </p>
             <div className="flex flex-wrap gap-2">
               {renderTags(profile.interests)}
             </div>
@@ -388,6 +413,73 @@ export default function MyProfile() {
           </div>
         </div>
       </div>
+      {/* Delete Account Section - ADD THIS BEFORE THE CLOSING DIV */}
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
+          Danger Zone
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+          Once you delete your account, there is no going back. This will
+          permanently delete your profile, posts, connections, and all
+          associated data.
+        </p>
+        <button
+          onClick={() => setShowDeleteDialog(true)}
+          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition"
+        >
+          Delete Account
+        </button>
+      </div>
+
+      {/* Delete Account Confirmation Dialog - ADD THIS */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-red-600 mb-4">
+              ⚠️ Delete Account?
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              This action <strong>cannot be undone</strong>. This will
+              permanently delete:
+            </p>
+            <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 mb-6 space-y-1">
+              <li>Your profile and all personal information</li>
+              <li>All your posts and comments</li>
+              <li>All your connections</li>
+              <li>All your messages and conversations</li>
+              <li>All your notifications</li>
+            </ul>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-6">
+              Type <span className="text-red-600">"DELETE"</span> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Type DELETE"
+              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 mb-6 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setDeleteConfirmText("");
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== "DELETE" || deleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Deleting..." : "Delete Forever"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

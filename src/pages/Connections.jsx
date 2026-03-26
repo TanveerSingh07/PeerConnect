@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
-import { connectionAPI } from '../services/api';
-import { toast } from 'react-toastify';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { connectionAPI } from "../services/api";
+import { toast } from "react-toastify";
 
 export default function Connections() {
-  const [activeTab, setActiveTab] = useState('connected');
+  const [activeTab, setActiveTab] = useState("connected");
   const [connections, setConnections] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [removing, setRemoving] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -19,51 +22,75 @@ export default function Connections() {
       const [connectionsRes, pendingRes, sentRes] = await Promise.all([
         connectionAPI.getAll(),
         connectionAPI.getPending(),
-        connectionAPI.getSent()
+        connectionAPI.getSent(),
       ]);
 
       setConnections(connectionsRes.data);
       setPendingRequests(pendingRes.data);
       setSentRequests(sentRes.data);
     } catch (error) {
-      console.error('Connections error:', error);
-      toast.error('Failed to load connections');
+      console.error("Connections error:", error);
+      toast.error("Failed to load connections");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAccept = async (connectionId) => {
+  const handleAccept = async (connectionId, e) => {
+    e.stopPropagation();
     try {
       await connectionAPI.accept(connectionId);
-      const accepted = pendingRequests.find(req => req._id === connectionId);
+      const accepted = pendingRequests.find((req) => req._id === connectionId);
       if (accepted) {
         setConnections([...connections, accepted.from]);
-        setPendingRequests(pendingRequests.filter(req => req._id !== connectionId));
+        setPendingRequests(
+          pendingRequests.filter((req) => req._id !== connectionId),
+        );
       }
-      toast.success('Connection accepted!');
+      toast.success("Connection accepted!");
     } catch (error) {
-      toast.error('Failed to accept connection');
+      toast.error("Failed to accept connection");
     }
   };
 
-  const handleReject = async (connectionId) => {
+  const handleReject = async (connectionId, e) => {
+    e.stopPropagation();
     try {
       await connectionAPI.reject(connectionId);
-      setPendingRequests(pendingRequests.filter(req => req._id !== connectionId));
-      toast.info('Connection rejected');
+      setPendingRequests(
+        pendingRequests.filter((req) => req._id !== connectionId),
+      );
+      toast.info("Connection rejected");
     } catch (error) {
-      toast.error('Failed to reject connection');
+      toast.error("Failed to reject connection");
     }
   };
 
-  const handleWithdraw = async (recipientId) => {
+  const handleWithdraw = async (recipientId, e) => {
+    e.stopPropagation();
     try {
       await connectionAPI.withdraw(recipientId);
-      setSentRequests(sentRequests.filter(req => req.to._id !== recipientId));
-      toast.info('Request withdrawn');
+      setSentRequests(sentRequests.filter((req) => req.to._id !== recipientId));
+      toast.info("Request withdrawn");
     } catch (error) {
-      toast.error('Failed to withdraw request');
+      toast.error("Failed to withdraw request");
+    }
+  };
+
+  const handleRemove = async (userId, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to remove this connection?"))
+      return;
+
+    setRemoving((prev) => ({ ...prev, [userId]: true }));
+    try {
+      await connectionAPI.remove(userId);
+      setConnections(connections.filter((c) => c._id !== userId));
+      toast.success("Connection removed");
+    } catch (error) {
+      toast.error("Failed to remove connection");
+    } finally {
+      setRemoving((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -72,7 +99,9 @@ export default function Connections() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading connections...</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading connections...
+          </p>
         </div>
       </div>
     );
@@ -85,31 +114,31 @@ export default function Connections() {
       {/* Tabs */}
       <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         <button
-          onClick={() => setActiveTab('connected')}
+          onClick={() => setActiveTab("connected")}
           className={`pb-2 px-4 font-semibold transition whitespace-nowrap ${
-            activeTab === 'connected'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            activeTab === "connected"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
           }`}
         >
           Connected ({connections.length})
         </button>
         <button
-          onClick={() => setActiveTab('pending')}
+          onClick={() => setActiveTab("pending")}
           className={`pb-2 px-4 font-semibold transition whitespace-nowrap ${
-            activeTab === 'pending'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            activeTab === "pending"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
           }`}
         >
           Pending ({pendingRequests.length})
         </button>
         <button
-          onClick={() => setActiveTab('sent')}
+          onClick={() => setActiveTab("sent")}
           className={`pb-2 px-4 font-semibold transition whitespace-nowrap ${
-            activeTab === 'sent'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            activeTab === "sent"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
           }`}
         >
           Sent Requests ({sentRequests.length})
@@ -117,7 +146,7 @@ export default function Connections() {
       </div>
 
       {/* Connected Tab */}
-      {activeTab === 'connected' && (
+      {activeTab === "connected" && (
         <div>
           {connections.length === 0 ? (
             <p className="text-center text-gray-500 dark:text-gray-400 py-12">
@@ -128,8 +157,16 @@ export default function Connections() {
               {connections.map((student) => (
                 <article
                   key={student._id}
-                  className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow hover:shadow-lg transition-shadow"
+                  onClick={() => navigate(`/profile/${student._id}`)}
+                  className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow hover:shadow-lg transition-shadow cursor-pointer"
                 >
+                  <button
+                    onClick={(e) => handleRemove(student._id, e)}
+                    disabled={removing[student._id]}
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded bg-white dark:bg-gray-700"
+                  >
+                    {removing[student._id] ? "..." : "Remove"}
+                  </button>
                   <div className="flex items-start gap-3 mb-3">
                     {student.profilePic ? (
                       <img
@@ -139,11 +176,13 @@ export default function Connections() {
                       />
                     ) : (
                       <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xl">
-                        {student.name?.[0]?.toUpperCase() || '?'}
+                        {student.name?.[0]?.toUpperCase() || "?"}
                       </div>
                     )}
                     <div>
-                      <p className="font-semibold text-lg">{student.name}</p>
+                      <p className="font-semibold text-lg hover:text-blue-600">
+                        {student.name}
+                      </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {student.year} • {student.department}
                       </p>
@@ -154,14 +193,17 @@ export default function Connections() {
                     <div className="mb-2">
                       <p className="text-xs font-semibold mb-1">Skills:</p>
                       <div className="flex flex-wrap gap-1">
-                        {student.skills.split(',').slice(0, 3).map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900"
-                          >
-                            {skill.trim()}
-                          </span>
-                        ))}
+                        {student.skills
+                          .split(",")
+                          .slice(0, 3)
+                          .map((skill, idx) => (
+                            <span
+                              key={idx}
+                              className="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900"
+                            >
+                              {skill.trim()}
+                            </span>
+                          ))}
                       </div>
                     </div>
                   )}
@@ -179,7 +221,7 @@ export default function Connections() {
       )}
 
       {/* Pending Requests Tab */}
-      {activeTab === 'pending' && (
+      {activeTab === "pending" && (
         <div>
           {pendingRequests.length === 0 ? (
             <p className="text-center text-gray-500 dark:text-gray-400 py-12">
@@ -190,7 +232,8 @@ export default function Connections() {
               {pendingRequests.map((request) => (
                 <div
                   key={request._id}
-                  className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow flex flex-col md:flex-row items-start md:items-center gap-4"
+                  onClick={() => navigate(`/profile/${request.from._id}`)}
+                  className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow flex flex-col md:flex-row items-start md:items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow"
                 >
                   {request.from?.profilePic ? (
                     <img
@@ -200,12 +243,14 @@ export default function Connections() {
                     />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                      {request.from?.name?.[0]?.toUpperCase() || '?'}
+                      {request.from?.name?.[0]?.toUpperCase() || "?"}
                     </div>
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold">{request.from?.name || 'Unknown'}</p>
+                    <p className="font-semibold hover:text-blue-600">
+                      {request.from?.name || "Unknown"}
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {request.from?.year} • {request.from?.department}
                     </p>
@@ -218,13 +263,13 @@ export default function Connections() {
 
                   <div className="flex gap-2 flex-shrink-0">
                     <button
-                      onClick={() => handleAccept(request._id)}
+                      onClick={(e) => handleAccept(request._id, e)}
                       className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-semibold transition"
                     >
                       Accept
                     </button>
                     <button
-                      onClick={() => handleReject(request._id)}
+                      onClick={(e) => handleReject(request._id, e)}
                       className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-semibold transition"
                     >
                       Reject
@@ -238,7 +283,7 @@ export default function Connections() {
       )}
 
       {/* Sent Requests Tab */}
-      {activeTab === 'sent' && (
+      {activeTab === "sent" && (
         <div>
           {sentRequests.length === 0 ? (
             <p className="text-center text-gray-500 dark:text-gray-400 py-12">
@@ -249,7 +294,8 @@ export default function Connections() {
               {sentRequests.map((request) => (
                 <div
                   key={request._id}
-                  className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow flex flex-col md:flex-row items-start md:items-center gap-4"
+                  onClick={() => navigate(`/profile/${request.to._id}`)}
+                  className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow flex flex-col md:flex-row items-start md:items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow"
                 >
                   {request.to?.profilePic ? (
                     <img
@@ -259,12 +305,14 @@ export default function Connections() {
                     />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                      {request.to?.name?.[0]?.toUpperCase() || '?'}
+                      {request.to?.name?.[0]?.toUpperCase() || "?"}
                     </div>
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold">{request.to?.name || 'Unknown'}</p>
+                    <p className="font-semibold hover:text-blue-600">
+                      {request.to?.name || "Unknown"}
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {request.to?.year} • {request.to?.department}
                     </p>
@@ -274,7 +322,7 @@ export default function Connections() {
                   </div>
 
                   <button
-                    onClick={() => handleWithdraw(request.to._id)}
+                    onClick={(e) => handleWithdraw(request.to._id, e)}
                     className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-semibold transition flex-shrink-0"
                   >
                     Withdraw

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Heart, MessageCircle, UserPlus, UserCheck } from 'lucide-react';
+import { Bell, Heart, MessageCircle, UserPlus, UserCheck, MessageSquare } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { notificationAPI } from '../services/api';
 
@@ -40,7 +40,7 @@ export default function Notifications() {
           )
         );
 
-        // ✅ FIX: Trigger navbar refresh by dispatching custom event
+        // Trigger navbar refresh
         window.dispatchEvent(new CustomEvent('notificationRead'));
         
       } catch (error) {
@@ -57,7 +57,7 @@ export default function Notifications() {
       await notificationAPI.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       
-      // ✅ FIX: Trigger navbar refresh
+      // Trigger navbar refresh
       window.dispatchEvent(new CustomEvent('notificationRead'));
       
       toast.success('All notifications marked as read');
@@ -76,6 +76,8 @@ export default function Notifications() {
         return <MessageCircle className="text-purple-500" size={20} />;
       case 'like':
         return <Heart className="text-red-500" size={20} />;
+      case 'message':
+        return <MessageSquare className="text-blue-500" size={20} />;
       default:
         return <Bell className="text-gray-500" size={20} />;
     }
@@ -95,6 +97,7 @@ export default function Notifications() {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'unread') return !notif.isRead;
     if (activeFilter === 'connections') return notif.type.includes('connection');
+    if (activeFilter === 'messages') return notif.type === 'message';
     if (activeFilter === 'likes') return notif.type === 'like';
     if (activeFilter === 'comments') return notif.type === 'comment';
     return true;
@@ -138,7 +141,7 @@ export default function Notifications() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto border-b border-gray-200 dark:border-gray-700">
-        {['all', 'unread', 'connections', 'likes', 'comments'].map(filter => (
+        {['all', 'unread', 'connections', 'messages', 'likes', 'comments'].map(filter => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}

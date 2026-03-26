@@ -231,3 +231,32 @@ export const getConnectionStatus = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// @desc    Remove/unfriend a connection
+// @route   DELETE /api/connections/remove/:userId
+// @access  Private
+export const removeConnection = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find and delete the accepted connection
+    const connection = await Connection.findOneAndDelete({
+      $or: [
+        { from: req.user._id, to: userId, status: 'accepted' },
+        { from: userId, to: req.user._id, status: 'accepted' }
+      ]
+    });
+
+    if (!connection) {
+      return res.status(404).json({ message: 'Connection not found' });
+    }
+
+    res.json({ 
+      message: 'Connection removed successfully',
+      removedUserId: userId
+    });
+  } catch (error) {
+    console.error('Remove connection error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

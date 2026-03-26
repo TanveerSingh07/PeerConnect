@@ -52,7 +52,9 @@ export const userAPI = {
   uploadImage: (formData) => api.post('/users/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  getStats: () => api.get('/users/stats')
+  getStats: () => api.get('/users/stats'),
+  getRecommendations: () => api.get('/users/recommendations'),
+  deleteAccount: () => api.delete('/users/account')
 };
 
 // CONNECTIONS API
@@ -64,7 +66,8 @@ export const connectionAPI = {
   send: (recipientId) => api.post(`/connections/send/${recipientId}`),
   accept: (connectionId) => api.put(`/connections/accept/${connectionId}`),
   reject: (connectionId) => api.put(`/connections/reject/${connectionId}`),
-  withdraw: (recipientId) => api.delete(`/connections/withdraw/${recipientId}`)
+  withdraw: (recipientId) => api.delete(`/connections/withdraw/${recipientId}`),
+  remove: (userId) => api.delete(`/connections/remove/${userId}`)
 };
 
 // POSTS API
@@ -86,6 +89,16 @@ export const notificationAPI = {
   getCount: () => api.get('/notifications/count'),
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
   markAllAsRead: () => api.put('/notifications/read-all')
+};
+
+// MESSAGES API - NEW
+export const messageAPI = {
+  getConversations: () => api.get('/messages/conversations'),
+  getOrCreateConversation: (userId) => api.post('/messages/conversation', { userId }),
+  getMessages: (conversationId, params = {}) => api.get(`/messages/${conversationId}`, { params }),
+  sendMessage: (conversationId, text) => api.post(`/messages/${conversationId}`, { text }),
+  markAsRead: (conversationId) => api.put(`/messages/${conversationId}/read`),
+  getUnreadCount: () => api.get('/messages/unread/count')
 };
 
 export default api;
