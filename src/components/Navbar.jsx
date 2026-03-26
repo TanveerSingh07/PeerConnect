@@ -21,11 +21,9 @@ export default function Navbar({ onToggleTheme, theme }) {
     }
   }, [isAuth]);
 
-  // ✅ FIX: Listen for Socket.io new messages to update count instantly
   useEffect(() => {
     if (isAuth) {
       const handleNewMessage = () => {
-        // Increment message count when new message arrives
         setMessageCount(prev => prev + 1);
       };
 
@@ -37,7 +35,6 @@ export default function Navbar({ onToggleTheme, theme }) {
     }
   }, [isAuth]);
 
-  // ✅ FIX: Listen for custom events when messages/notifications are viewed
   useEffect(() => {
     if (isAuth) {
       const handleNotificationRead = () => {
@@ -58,7 +55,6 @@ export default function Navbar({ onToggleTheme, theme }) {
     }
   }, [isAuth]);
 
-  // Refresh on page visibility change
   useEffect(() => {
     if (isAuth) {
       const handleVisibilityChange = () => {
@@ -72,10 +68,8 @@ export default function Navbar({ onToggleTheme, theme }) {
     }
   }, [isAuth]);
 
-  // ✅ FIX: Instant refresh when navigating to chat/notifications
   useEffect(() => {
     if (isAuth && (location.pathname === '/notifications' || location.pathname === '/chat')) {
-      // Immediate update
       fetchCounts();
     }
   }, [isAuth, location.pathname]);

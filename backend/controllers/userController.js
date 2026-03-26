@@ -166,7 +166,6 @@ export const getRecommendations = async (req, res) => {
   try {
     const currentUser = await User.findById(req.user._id);
 
-    // Get user's connections
     const connections = await Connection.find({
       $or: [
         { from: req.user._id, status: "accepted" },
@@ -178,7 +177,6 @@ export const getRecommendations = async (req, res) => {
       conn.from.toString() === req.user._id.toString() ? conn.to : conn.from,
     );
 
-    // Get pending connection requests
     const pendingConnections = await Connection.find({
       $or: [
         { from: req.user._id, status: "pending" },
@@ -190,17 +188,14 @@ export const getRecommendations = async (req, res) => {
       conn.from.toString() === req.user._id.toString() ? conn.to : conn.from,
     );
 
-    // Exclude: self, connected users, and pending requests
     const excludeIds = [req.user._id, ...connectedUserIds, ...pendingUserIds];
 
-    // Find all potential users
     const allUsers = await User.find({
       _id: { $nin: excludeIds },
     })
       .select("-password")
       .limit(50);
 
-    // ✅ ENHANCED: Calculate weighted score for each user
     const recommendations = await Promise.all(
       allUsers.map(async (user) => {
         let score = 0;
@@ -282,7 +277,6 @@ export const getRecommendations = async (req, res) => {
       })
     );
 
-    // Filter out users with score 0 and sort by score
     const sortedRecommendations = recommendations
       .filter((rec) => rec.recommendationScore > 0)
       .sort((a, b) => b.recommendationScore - a.recommendationScore)
@@ -302,38 +296,30 @@ export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Delete user's posts
     await Post.deleteMany({ author: userId });
 
-    // Delete user's connections (both directions)
     await Connection.deleteMany({
       $or: [{ from: userId }, { to: userId }]
     });
 
-    // Delete user's messages
     await Message.deleteMany({ sender: userId });
 
-    // Delete conversations where user is participant
     const conversations = await Conversation.find({ participants: userId });
     for (const conv of conversations) {
-      // If conversation has only this user, delete it
       if (conv.participants.length === 1) {
         await Conversation.findByIdAndDelete(conv._id);
         await Message.deleteMany({ conversation: conv._id });
       } else {
-        // Remove user from participants
         await Conversation.findByIdAndUpdate(conv._id, {
           $pull: { participants: userId }
         });
       }
     }
 
-    // Delete user's notifications (both sent and received)
     await Notification.deleteMany({
       $or: [{ user: userId }, { from: userId }]
     });
 
-    // Finally, delete the user account
     await User.findByIdAndDelete(userId);
 
     res.json({ 

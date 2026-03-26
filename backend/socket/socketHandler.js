@@ -1,7 +1,7 @@
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 
-const userSockets = new Map(); // userId -> socketId mapping
+const userSockets = new Map(); 
 
 export const setupSocket = (io) => {
   io.on('connection', (socket) => {
@@ -12,8 +12,6 @@ export const setupSocket = (io) => {
       userSockets.set(userId, socket.id);
       socket.userId = userId;
       console.log(`👤 User ${userId} joined with socket ${socket.id}`);
-
-      // Notify user's contacts that they're online
       socket.broadcast.emit('userOnline', userId);
     });
 
@@ -28,7 +26,6 @@ export const setupSocket = (io) => {
       socket.leave(conversationId);
     });
 
-    // ✅ FIX: Only emit message, don't create in DB (API handles that)
     socket.on('newMessageSent', ({ conversationId, message, recipientId }) => {
       // Emit ONLY to the recipient, not to sender
       const recipientSocketId = userSockets.get(recipientId);

@@ -22,7 +22,6 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
   useEffect(() => {
     fetchMessages();
 
-    // Listen for typing indicators
     const handleUserTyping = ({ userId, conversationId }) => {
       if (conversationId === conversation._id && userId !== currentUser._id) {
         setIsTyping(true);
@@ -35,7 +34,6 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
       }
     };
 
-    // ✅ FIX: Listen for new messages from OTHER users only
     const handleNewMessage = (message) => {
       if (message.conversation === conversation._id && message.sender._id !== currentUser._id) {
         setMessages(prev => [...prev, message]);
@@ -53,7 +51,6 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     };
   }, [conversation._id]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -84,25 +81,19 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     setSending(true);
 
     try {
-      // ✅ FIX: Only send via API (creates in DB + returns message)
       const { data } = await messageAPI.sendMessage(conversation._id, messageText);
-
-      // ✅ Add to sender's state immediately
       setMessages(prev => [...prev, data.message]);
-
-      // ✅ Emit via Socket.io to recipient ONLY
       socketService.socket.emit('newMessageSent', {
         conversationId: conversation._id,
         message: data.message,
         recipientId: data.recipientId
       });
 
-      // Stop typing indicator
       socketService.stopTyping(conversation._id, currentUser._id);
     } catch (error) {
       console.error('Send message error:', error);
       toast.error('Failed to send message');
-      setNewMessage(messageText); // Restore message on error
+      setNewMessage(messageText);
     } finally {
       setSending(false);
     }
@@ -111,15 +102,12 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
 
-    // Send typing indicator
     socketService.startTyping(conversation._id, currentUser._id);
 
-    // Clear previous timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Stop typing after 2 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       socketService.stopTyping(conversation._id, currentUser._id);
     }, 2000);
@@ -144,7 +132,7 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
           <ArrowLeft size={20} />
         </button>
 
-        {/* ✅ FIX: Clickable profile */}
+        {/* Clickable profile */}
         <div 
           className="flex items-center gap-3 flex-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition"
           onClick={() => navigate(`/profile/${otherUser._id}`)}

@@ -40,12 +40,10 @@ export default function Chat() {
   // Listen for new messages in real-time
   useEffect(() => {
     const handleNewMessage = (message) => {
-      // Update conversation list with new last message
       setConversations((prev) =>
         prev
           .map((conv) => {
             if (conv._id === message.conversation) {
-              // ✅ Increment unread count if not current conversation
               const isCurrentConversation =
                 selectedConversation?._id === message.conversation;
               return {
@@ -131,17 +129,14 @@ export default function Chat() {
     setSelectedConversation(conversation);
     socketService.joinConversation(conversation._id);
 
-    // ✅ Reset unread count immediately in UI
     setConversations((prev) =>
       prev.map((conv) =>
         conv._id === conversation._id ? { ...conv, unreadCount: 0 } : conv,
       ),
     );
 
-    // Mark as read in backend
     try {
       await messageAPI.markAsRead(conversation._id);
-      // Trigger navbar count update
       window.dispatchEvent(new CustomEvent("messageRead"));
     } catch (error) {
       console.error("Mark as read error:", error);

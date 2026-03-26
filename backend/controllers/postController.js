@@ -146,18 +146,15 @@ export const likePost = async (req, res) => {
     let wasLiked = false;
 
     if (likeIndex > -1) {
-      // Unlike
       post.likes.splice(likeIndex, 1);
       wasLiked = false;
     } else {
-      // Like
       post.likes.push(req.user._id);
       wasLiked = true;
     }
 
     await post.save();
 
-    // ✅ Create notification ONLY when liked (not unliked) and not own post
     if (wasLiked && post.author.toString() !== req.user._id.toString()) {
       await createNotification(post.author, "like", req.user._id, {
         relatedId: post._id,
@@ -197,7 +194,6 @@ export const addComment = async (req, res) => {
     post.comments.push(comment);
     await post.save();
 
-    // ✅ Create notification if not own post
     if (post.author.toString() !== req.user._id.toString()) {
       await createNotification(post.author, "comment", req.user._id, {
         relatedId: post._id,
@@ -207,7 +203,6 @@ export const addComment = async (req, res) => {
       });
     }
 
-    // Populate and return
     const populatedPost = await Post.findById(post._id)
       .populate("author", "name profilePic department year")
       .populate({

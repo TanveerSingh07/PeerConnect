@@ -7,7 +7,6 @@ import Connection from '../models/Connection.js';
 // @access  Private
 export const getNotifications = async (req, res) => {
   try {
-    // Fetch notifications from database
     const notifications = await Notification.find({ user: req.user._id })
       .populate('from', 'name profilePic department year')
       .sort({ createdAt: -1 })

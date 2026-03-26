@@ -27,7 +27,6 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for efficient queries
 messageSchema.index({ conversation: 1, createdAt: -1 });
 
 export default mongoose.model('Message', messageSchema);

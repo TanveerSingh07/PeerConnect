@@ -66,7 +66,6 @@ export default function MyProfile() {
     }
   };
 
-  // FIXED: Proper completion calculation capped at 100%
   const completion = useMemo(() => {
     const requiredFields = [
       "name",
@@ -92,7 +91,6 @@ export default function MyProfile() {
 
     const percentage = Math.round((filledFields / requiredFields.length) * 100);
 
-    // Cap at 100%
     return Math.min(percentage, 100);
   }, [profile]);
 
@@ -178,7 +176,7 @@ export default function MyProfile() {
         </div>
       </div>
 
-      {/* Completion Bar - FIXED */}
+      {/* Completion Bar */}
       <div className="mb-6">
         <p className="text-sm mb-2 text-gray-600 dark:text-gray-300">
           Profile Completion
@@ -413,7 +411,7 @@ export default function MyProfile() {
           </div>
         </div>
       </div>
-      {/* Delete Account Section - ADD THIS BEFORE THE CLOSING DIV */}
+      {/* Delete Account Section */}
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
           Danger Zone
@@ -431,7 +429,7 @@ export default function MyProfile() {
         </button>
       </div>
 
-      {/* Delete Account Confirmation Dialog - ADD THIS */}
+      {/* Delete Account Confirmation Dialog */}
       {showDeleteDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">

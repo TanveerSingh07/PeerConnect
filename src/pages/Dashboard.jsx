@@ -243,7 +243,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Skill Recommendations - NEW */}
+      {/* Skill Recommendations */}
       <SkillRecommendations />
 
       {/* Community Feed */}

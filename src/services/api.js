@@ -25,7 +25,6 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
 
-      // Only redirect if user is NOT already on login page
       if (currentPath !== '/login') {
         localStorage.removeItem('token');
         localStorage.removeItem('peerProfile');
@@ -91,7 +90,7 @@ export const notificationAPI = {
   markAllAsRead: () => api.put('/notifications/read-all')
 };
 
-// MESSAGES API - NEW
+// MESSAGES API 
 export const messageAPI = {
   getConversations: () => api.get('/messages/conversations'),
   getOrCreateConversation: (userId) => api.post('/messages/conversation', { userId }),

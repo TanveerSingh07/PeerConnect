@@ -8,12 +8,10 @@ export const register = async (req, res) => {
   try {
     const { email, password, name, collegeId } = req.body;
 
-    // Validation
     if (!email || !password || !name || !collegeId) {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    // Check if user exists
     const userExists = await User.findOne({ 
       $or: [{ email }, { collegeId }] 
     });
@@ -26,7 +24,6 @@ export const register = async (req, res) => {
       });
     }
 
-    // Create user
     const user = await User.create({
       email,
       password,
@@ -56,26 +53,22 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    // Find user with password field
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Return user data and token
     res.json({
       _id: user._id,
       name: user.name,

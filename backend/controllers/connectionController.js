@@ -43,7 +43,6 @@ export const sendConnectionRequest = async (req, res) => {
       connection,
     });
 
-    // Create connection request notification
     await createNotification(recipientId, "connection_request", req.user._id, {
       message: "sent you a connection request",
       link: "/connections",
@@ -77,7 +76,6 @@ export const acceptConnectionRequest = async (req, res) => {
       connection,
     });
 
-    // Create connection accepted notification for the requester
     await createNotification(
       connection.from,
       "connection_accepted",

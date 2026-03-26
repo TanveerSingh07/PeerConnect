@@ -28,12 +28,10 @@ export default function Notifications() {
   };
 
   const handleClick = async (notification) => {
-    // Mark as read if unread
     if (!notification.isRead) {
       try {
         await notificationAPI.markAsRead(notification._id);
         
-        // Update local state immediately
         setNotifications(prev =>
           prev.map(n =>
             n._id === notification._id ? { ...n, isRead: true } : n
@@ -48,7 +46,6 @@ export default function Notifications() {
       }
     }
     
-    // Navigate to link
     navigate(notification.link);
   };
 

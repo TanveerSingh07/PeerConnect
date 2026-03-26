@@ -23,7 +23,6 @@ export const getOrCreateConversation = async (req, res) => {
       userId.toString()
     ].sort();
 
-    // ✅ ALWAYS CHECK FIRST
     let conversation = await Conversation.findOne({
       participants: { $all: participants, $size: 2 }
     })
@@ -34,10 +33,9 @@ export const getOrCreateConversation = async (req, res) => {
       });
 
     if (conversation) {
-      return res.json(conversation); // ✅ RETURN EARLY
+      return res.json(conversation); 
     }
 
-    // ✅ CREATE ONLY IF NOT EXISTS
     conversation = await Conversation.create({
       participants
     });
@@ -54,7 +52,6 @@ export const getOrCreateConversation = async (req, res) => {
   } catch (error) {
     console.error('❌ Conversation error:', error);
 
-    // ✅ HANDLE DUPLICATE ERROR SAFELY
     if (error.code === 11000) {
       const { userId } = req.body;
 
@@ -92,7 +89,6 @@ export const getConversations = async (req, res) => {
       .sort({ lastMessageAt: -1 })
       .lean();
 
-    // ✅ ADD: Calculate unread count for each conversation
     const conversationsWithUnread = await Promise.all(
       conversations.map(async (conv) => {
         const unreadCount = await Message.countDocuments({
@@ -123,7 +119,6 @@ export const getMessages = async (req, res) => {
     const { conversationId } = req.params;
     const { limit = 50, skip = 0 } = req.query;
 
-    // Verify user is part of conversation
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found' });
@@ -154,7 +149,6 @@ export const sendMessage = async (req, res) => {
     const { conversationId } = req.params;
     const { text } = req.body;
 
-    // Verify conversation exists and user is participant
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found' });
@@ -164,28 +158,23 @@ export const sendMessage = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    // Create message
     const message = await Message.create({
       conversation: conversationId,
       sender: req.user._id,
       text
     });
 
-    // Update conversation's last message
     conversation.lastMessage = message._id;
     conversation.lastMessageAt = new Date();
     await conversation.save();
 
-    // Populate and return
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'name profilePic');
 
-    // Get recipient
     const recipient = conversation.participants.find(
       p => p.toString() !== req.user._id.toString()
     );
 
-    // Create notification for recipient
     if (recipient) {
       await createNotification(recipient, 'message', req.user._id, {
         relatedId: conversationId,

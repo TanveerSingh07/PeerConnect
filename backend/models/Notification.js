@@ -43,7 +43,6 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound index for efficient queries
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 
 export default mongoose.model("Notification", notificationSchema);
