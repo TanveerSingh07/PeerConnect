@@ -31,8 +31,6 @@ The platform focuses on **smart connections, real-time interaction, and meaningf
   - GitHub & LinkedIn links  
 - Profile-based personalization across the platform  
 
----
-
 ### 🤝 Smart Peer Discovery
 - Intelligent recommendation system based on:
   - Skill similarity  
@@ -41,15 +39,11 @@ The platform focuses on **smart connections, real-time interaction, and meaningf
 - Browse students with search & filters  
 - Dynamic connection status (connected / pending / sent)  
 
----
-
 ### 👥 Connection Management
 - Send, accept, reject connection requests  
 - Withdraw sent requests  
 - Remove existing connections  
 - Structured network view (Connected / Pending / Sent)  
-
----
 
 ### 💬 Real-Time Messaging System
 - One-to-one chat using **Socket.io**  
@@ -58,16 +52,12 @@ The platform focuses on **smart connections, real-time interaction, and meaningf
 - Conversation-based chat structure  
 - Unread message tracking  
 
----
-
 ### 📱 Community Feed (Mini Social Platform)
 - Create and share posts  
 - Like and comment on posts  
 - Tag-based content  
 - Real-time UI updates  
 - User interaction through shared content  
-
----
 
 ### 🔔 Notification System
 - Notifications for:
@@ -78,8 +68,6 @@ The platform focuses on **smart connections, real-time interaction, and meaningf
 - Mark individual or all notifications as read  
 - Categorized notification filtering  
 
----
-
 ### 📊 Dashboard Experience
 - Personalized dashboard with:
   - Connection stats  
@@ -87,8 +75,6 @@ The platform focuses on **smart connections, real-time interaction, and meaningf
   - Activity insights  
 - Interactive chart visualization  
 - Suggested peers & recent activity  
-
----
 
 ### 🎨 User Experience & UI
 - Fully responsive design  
